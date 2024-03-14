@@ -1,0 +1,7 @@
+- Model: MultitaskRegressor
+
+- https://deepchem.readthedocs.io/en/latest/api_reference/models.html#model-cheatsheet < - labai svarbi dokumentacija
+
+- Naudoti santykines energijas (nuo maziausios imti santyki), o ne absoliutines;
+
+- All info apie pati regressoriu reikia dar isgauti iki kitos savaites
