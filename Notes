@@ -4,4 +4,4 @@
 
 - Naudoti santykines energijas (nuo maziausios imti santyki), o ne absoliutines;
 
-- All info apie pati regressoriu reikia dar isgauti iki kitos savaites
+- Pats XGBRegressor yra ansamblinis regresorius, kurio "weak" modeliai yra negilūs decision trees
