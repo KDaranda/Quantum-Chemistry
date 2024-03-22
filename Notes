@@ -1,4 +1,4 @@
-- Model: MultitaskRegressor
+- Model: XGBRegressor
 
 - https://deepchem.readthedocs.io/en/latest/api_reference/models.html#model-cheatsheet < - labai svarbi dokumentacija
 
