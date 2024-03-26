@@ -5,3 +5,5 @@
 - Naudoti santykines energijas (nuo maziausios imti santyki), o ne absoliutines;
 
 - Pats XGBRegressor yra ansamblinis regresorius, kurio "weak" modeliai yra negilūs decision trees
+
+- https://docs.getml.com/1.1.0/api/getml.predictors.XGBoostRegressor.html
