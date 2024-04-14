@@ -5,3 +5,29 @@
 - Naudoti santykines energijas (nuo maziausios imti santyki), o ne absoliutines;
 
 - All info apie pati regressoriu reikia dar isgauti iki kitos savaites
+
+- RMSE pakeist skirtumu
+
+{
+    (1)max_depth: [1, 10, 100]
+    (2)max_depth: [1, 5, 10]
+    (3)max_depth: [0.3, 3, 30]
+    (4)max_depth: [3, 5] -> 5 geriausias
+
+    (1)subsample: [0.3, 0.5, 0.7] -> beveik visada geriausias gaunasi 0.3, unless imame max_depth = 5
+    (2)subsample: [0.3, 0.5]
+
+    (1)colsample_bytree: [0.1, 0.5, 0.9] -> geriausias 0.1 *but why?
+
+    (1)alpha: [0, 0.5] -> geriausias 0
+
+    (1)gamma: [0, 0.1, 0.2] -> geriausias 0
+
+    (1)lambda: [1, 2] -> geriausias 2
+
+    (1)min_child_weight: [1, 2] -> geriausias 2
+
+    (1)n_estimators: [100, 200, 300] -> geriausias 300
+
+    MAE = 0.0019007993430095107
+}

@@ -56,6 +56,6 @@ def process_folder(folder_name, output_file_path):
                             output_file.write('-----------------')
                             output_file.write("\n")
                             
-folder_name = 'bdpolarity-KD'
+folder_name = 'bdpolarity-KD/BDP-ph'
 conclusions_log_path = 'ExtractedData.log'
 process_folder(folder_name, conclusions_log_path)
