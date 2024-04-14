@@ -1,13 +1,8 @@
-- Model: XGBRegressor
+- Model: MultitaskRegressor
 
 - https://deepchem.readthedocs.io/en/latest/api_reference/models.html#model-cheatsheet < - labai svarbi dokumentacija
 
-- Naudoti santykines energijas (nuo maziausios imti santyki), o ne absoliutines;
-
-<<<<<<< HEAD
-- All info apie pati regressoriu reikia dar isgauti iki kitos savaites
-
-- RMSE pakeist skirtumu
+- Pats XGBRegressor yra ansamblinis regresorius, kurio "weak" modeliai yra negilūs decision trees
 
 {
     (1)max_depth: [1, 10, 100]
@@ -32,8 +27,3 @@
 
     MAE = 0.0019007993430095107
 }
-=======
-- Pats XGBRegressor yra ansamblinis regresorius, kurio "weak" modeliai yra negilūs decision trees
-
-- https://docs.getml.com/1.1.0/api/getml.predictors.XGBoostRegressor.html
->>>>>>> 5d1ab5d5c14122e1c16c5a915845d32de2092d4f
