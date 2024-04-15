@@ -7,31 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Define features and target
-X = filtered_df.drop(['SCF_energy', 'molecule', 'solvent', 'iteration', 'energy_diff'], axis=1)
-y = filtered_df['energy_diff']
-
-# Split the data into training and testing sets
-X_train, X_ham, y_train, y_ham = train_test_split(X, y, test_size=0.4, random_state=42)
-X_test, X_val, y_test, y_val = train_test_split(X_ham, y_ham, test_size=0.5, random_state=42)
-
-print('\n-------------\nDATA IS SPLIT\n-------------\n')
-
-# Normalize feature data
 scaler_X = StandardScaler()
 
-X_train_scaled = scaler_X.fit_transform(X_train)
-X_test_scaled = scaler_X.transform(X_test)
-X_val_scaled = scaler_X.transform(X_val)
-
-print('\n------------------\nDATA IS NORMALIZED\n------------------\n')
-
-# Convert data to DMatrix format for XGBoost
-dtrain = xgb.DMatrix(X_train_scaled, label=y_train) 
-dtest = xgb.DMatrix(X_test_scaled, label=y_test) 
-dval = xgb.DMatrix(X_val_scaled, label=y_val)
-
-# Parameters for XGBoost
+# Parameters for XGBoost booster model
 params = {
     'max_depth': 5,
     'eta': 0.3,
@@ -43,14 +21,95 @@ params = {
     'gamma': 0,
     'lambda': 2,
     'min_child_weight': 2,
-    'n_estimators': 300
+    #'n_estimators': 300
 }
+
+molecule_solvent_pairs = filtered_df[['molecule', 'solvent']].drop_duplicates()
+pair_count = len(molecule_solvent_pairs)
+
+# Determine the layout of the subplots
+cols = 3  # Number of columns in the subplot grid
+rows = (pair_count + cols - 1) // cols  # Calculate rows needed
+
+fig, axs = plt.subplots(rows, cols, figsize=(15, rows * 5))
+axs = axs.flatten()  # Flatten to 1D array for easy iteration
+
+for index, (ax, (_, row)) in enumerate(zip(axs, molecule_solvent_pairs.iterrows())):
+    molecule = row['molecule']
+    solvent = row['solvent']
+
+    # Filter data for the current molecule-solvent pair
+    df_pair = filtered_df[(filtered_df['molecule'] == molecule) & (filtered_df['solvent'] == solvent)]
+    X = df_pair.drop(['SCF_energy', 'molecule', 'solvent', 'iteration', 'energy_diff'], axis=1)
+    y = df_pair['energy_diff']
+
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+    X_train_scaled = scaler_X.fit_transform(X_train)
+    X_test_scaled = scaler_X.transform(X_test)
+
+    # Convert data to DMatrix format for XGBoost
+    dtrain = xgb.DMatrix(X_train_scaled, label=y_train) 
+    dtest = xgb.DMatrix(X_test_scaled, label=y_test)
+
+    # Train the model
+    evals_result = {}
+    bst = xgb.train(params, dtrain, 100, evals=[(dtrain, 'train'), (dtest, 'test')], early_stopping_rounds=10, evals_result=evals_result, verbose_eval=False)
+
+    # Plotting the training and test metrics
+    epochs = len(evals_result['train']['mae'])
+    x_axis = range(0, epochs)
+    train_mae = evals_result['train']['mae']
+    test_mae = evals_result['test']['mae']
+
+    ax.plot(x_axis, evals_result['train']['mae'], label='Train')
+    ax.plot(x_axis, evals_result['test']['mae'], label='Test')
+
+    # Highlight the minimum points on the graph
+    min_train_idx = np.argmin(train_mae)
+    min_test_idx = np.argmin(test_mae)
+    ax.scatter(min_train_idx, train_mae[min_train_idx], color='red', s=50, label='Train Min')
+    ax.scatter(min_test_idx, test_mae[min_test_idx], color='blue', s=50, label='Test Min')
+
+    ax.annotate(f'Min MAE: {train_mae[min_train_idx]:.3f}', xy=(min_train_idx, train_mae[min_train_idx]), xytext=(min_train_idx, train_mae[min_train_idx]+0.1),fontsize=9)
+    ax.annotate(f'Min MAE: {test_mae[min_test_idx]:.3f}', xy=(min_test_idx, test_mae[min_test_idx]), xytext=(min_test_idx, test_mae[min_test_idx]+0.1), fontsize=9)
+
+    ax.set_title(f"{molecule}-{solvent}")
+    ax.set_xlabel('Epochs')
+    ax.set_ylabel('MAE')
+    ax.legend()
+
+# Adjust layout
+plt.tight_layout()
+plt.show()
+
+# Define features and target
+'''X = filtered_df.drop(['SCF_energy', 'molecule', 'solvent', 'iteration', 'energy_diff'], axis=1)
+y = filtered_df['energy_diff']
+
+# Split the data into training and testing sets
+X_train, X_ham, y_train, y_ham = train_test_split(X, y, test_size=0.4, random_state=42)
+X_test, X_val, y_test, y_val = train_test_split(X_ham, y_ham, test_size=0.5, random_state=42)
+
+print('\n-------------\nDATA IS SPLIT\n-------------\n')
+
+# Normalize feature data
+X_train_scaled = scaler_X.fit_transform(X_train)
+X_test_scaled = scaler_X.transform(X_test)
+X_val_scaled = scaler_X.transform(X_val)
+
+print('\n------------------\nDATA IS NORMALIZED\n------------------\n')
+
+# Convert data to DMatrix format for XGBoost
+dtrain = xgb.DMatrix(X_train_scaled, label=y_train) 
+dtest = xgb.DMatrix(X_test_scaled, label=y_test) 
+dval = xgb.DMatrix(X_val_scaled, label=y_val)
 
 print('\n---------------------\nSTARTING THE TRAINING\n---------------------\n')
 
-num_rounds = 100
 evals_result = {}
-bst = xgb.train(params, dtrain, num_rounds, evals=[(dtrain, 'train'), (dval, 'validation')], early_stopping_rounds=5, evals_result = evals_result, verbose_eval=True)
+bst = xgb.train(params, dtrain, num_rounds = 100, evals=[(dtrain, 'train'), (dval, 'validation')], early_stopping_rounds=5, evals_result = evals_result, verbose_eval=True)
 
 # Predictions
 predictions = bst.predict(dtest)
@@ -86,7 +145,7 @@ ax.legend()
 plt.ylabel('MAE')
 plt.title('XGBoost MAE')
 plt.text(0, 0.01, f"MAE for testing subset: {mae}")
-plt.show()
+plt.show()'''
 
 
 '''# Split the data into training and testing sets
