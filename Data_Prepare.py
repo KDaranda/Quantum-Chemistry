@@ -80,14 +80,17 @@ specific_molecule = 'bdp-phenyl'
 file_path = 'ConvertedCoordinates.log'
 parsed_data = parse_internal_coords(file_path)
 
-print('\n--------------\nDATA IS PARSED\n--------------\n')
+if __name__ == '__main__':
+    print('\n--------------\nDATA IS PARSED\n--------------\n')
 
 # Assuming `parsed_data` is your initial list of dictionaries after parsing the log file
 flattened_data = flatten_data(parsed_data)
 
-print('\n-----------------\nDATA IS FLATTENED\n-----------------\n')
+if __name__ == '__main__':
+    print('\n-----------------\nDATA IS FLATTENED\n-----------------\n')
 
 filtered_df = create_feature_df(flattened_data)
 
-print(filtered_df.head())
-print('\n--------------------\nDATAFRAME IS CREATED\n--------------------\n')
+if __name__ == '__main__':
+    print(filtered_df.head())
+    print('\n--------------------\nDATAFRAME IS CREATED\n--------------------\n')

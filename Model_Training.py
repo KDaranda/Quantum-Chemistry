@@ -34,6 +34,9 @@ rows = (pair_count + cols - 1) // cols  # Calculate rows needed
 fig, axs = plt.subplots(rows, cols, figsize=(15, rows * 5))
 axs = axs.flatten()  # Flatten to 1D array for easy iteration
 
+mae_total = 0
+mae_count = 0
+
 for index, (ax, (_, row)) in enumerate(zip(axs, molecule_solvent_pairs.iterrows())):
     molecule = row['molecule']
     solvent = row['solvent']
@@ -44,45 +47,78 @@ for index, (ax, (_, row)) in enumerate(zip(axs, molecule_solvent_pairs.iterrows(
     y = df_pair['energy_diff']
 
     # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_train, X_ham, y_train, y_ham = train_test_split(X, y, test_size=0.4, random_state=42)
+    X_test, X_val, y_test, y_val = train_test_split(X_ham, y_ham, test_size=0.5, random_state=42)
+
+    print('\n-------------\nDATA IS SPLIT\n-------------\n')
 
     X_train_scaled = scaler_X.fit_transform(X_train)
     X_test_scaled = scaler_X.transform(X_test)
+    X_val_scaled = scaler_X.transform(X_val)
+
+    print('\n------------------\nDATA IS NORMALIZED\n------------------\n')
 
     # Convert data to DMatrix format for XGBoost
     dtrain = xgb.DMatrix(X_train_scaled, label=y_train) 
     dtest = xgb.DMatrix(X_test_scaled, label=y_test)
+    dval = xgb.DMatrix(X_val_scaled, label=y_val)
+
+    print('\n---------------------\nSTARTING THE TRAINING\n---------------------\n')
 
     # Train the model
     evals_result = {}
-    bst = xgb.train(params, dtrain, 100, evals=[(dtrain, 'train'), (dtest, 'test')], early_stopping_rounds=10, evals_result=evals_result, verbose_eval=False)
+    bst = xgb.train(params, dtrain, 100, evals=[(dtrain, 'train'), (dtest, 'test'), (dval, 'validation')], early_stopping_rounds=5, evals_result=evals_result, verbose_eval=True)
+
+    # Predictions
+    predictions = bst.predict(dtest)
+
+    # Calculate MAE
+    mae = mean_absolute_error(y_test.astype(float), predictions)
+
+    # Optionally, print evaluation metrics
+    print('\nFinal best validation subset MAE for ' + molecule + "-" + solvent)
+    print(min(evals_result['validation']['mae']))  # Example: printing final MAE for test set
+
+    print('\nFinal best actual MAE for ' + molecule + "-" + solvent)
+    print(min(evals_result['test']['mae']))  # Example: printing final MAE for test set
+    
+    # Store mae for future calculations
+    mae_total = mae_total + mae
+    mae_count = mae_count + 1
 
     # Plotting the training and test metrics
     epochs = len(evals_result['train']['mae'])
     x_axis = range(0, epochs)
     train_mae = evals_result['train']['mae']
     test_mae = evals_result['test']['mae']
+    validation_mae = evals_result['validation']['mae']
 
-    ax.plot(x_axis, evals_result['train']['mae'], label='Train')
-    ax.plot(x_axis, evals_result['test']['mae'], label='Test')
+    ax.plot(x_axis, evals_result['train']['mae'], label='Train', color = 'red')
+    ax.plot(x_axis, evals_result['test']['mae'], label='Test', color = 'blue')
+    ax.plot(x_axis, evals_result['validation']['mae'], label='Validation', color = 'green')
 
     # Highlight the minimum points on the graph
     min_train_idx = np.argmin(train_mae)
     min_test_idx = np.argmin(test_mae)
-    ax.scatter(min_train_idx, train_mae[min_train_idx], color='red', s=50, label='Train Min')
-    ax.scatter(min_test_idx, test_mae[min_test_idx], color='blue', s=50, label='Test Min')
+    min_validation_idx = np.argmin(validation_mae)
 
-    ax.annotate(f'Min MAE: {train_mae[min_train_idx]:.3f}', xy=(min_train_idx, train_mae[min_train_idx]), xytext=(min_train_idx, train_mae[min_train_idx]+0.1),fontsize=9)
-    ax.annotate(f'Min MAE: {test_mae[min_test_idx]:.3f}', xy=(min_test_idx, test_mae[min_test_idx]), xytext=(min_test_idx, test_mae[min_test_idx]+0.1), fontsize=9)
+    ax.scatter(min_train_idx, train_mae[min_train_idx], color='blue', s=20, label=f'Train Min = {train_mae[min_train_idx]:.5f}')
+    ax.scatter(min_test_idx, test_mae[min_test_idx], color='red', s=20, label=f'Test Min = {test_mae[min_test_idx]:.5f}')
+    ax.scatter(min_validation_idx, validation_mae[min_validation_idx], color='black', s=20, label=f'Validation Min = {validation_mae[min_validation_idx]:.5f}')
 
     ax.set_title(f"{molecule}-{solvent}")
     ax.set_xlabel('Epochs')
     ax.set_ylabel('MAE')
     ax.legend()
 
+
 # Adjust layout
 plt.tight_layout()
 plt.show()
+
+average_mae = mae_total/mae_count
+print(f"\nAverage MAE for {specific_molecule} with different solvents is equal to {average_mae}")
+
 
 # Define features and target
 '''X = filtered_df.drop(['SCF_energy', 'molecule', 'solvent', 'iteration', 'energy_diff'], axis=1)
