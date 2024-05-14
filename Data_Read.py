@@ -43,7 +43,7 @@ def process_folder(folder_name, output_file_path):
                         output_file.write(f"Iteration {i + 1} - SCF Done Information:\n")
                         output_file.write(f"{scf_done_value}\n")
 
-                        output_file.write("Input Orientation Information:\n")
+                        output_file.write("Input Orientation Information:")
                         input_orientation_info = input_orientation_info_list[i] if i < len(input_orientation_info_list) else []
 
                         if input_orientation_info:
